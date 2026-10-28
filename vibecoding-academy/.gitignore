@@ -1,0 +1,21 @@
+# зависимости
+node_modules/
+
+# сборка Next.js
+.next/
+out/
+next-env.d.ts
+
+# секреты: строка подключения к Neon не должна попасть в Git
+.env.local
+.env*.local
+
+# локальная БД PGlite (данные тренажёра на твоей машине)
+.pglite-data/
+
+# мусор ОС и редакторов
+.DS_Store
+*.log
+
+# кэш tsc
+*.tsbuildinfo

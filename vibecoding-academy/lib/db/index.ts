@@ -1,13 +1,17 @@
-// ЗАЧЕМ: подключение к Neon. neon-http отправляет каждый запрос обычным HTTPS-fetch —
-// это идеально для serverless: нет постоянных соединений, которые надо держать и закрывать.
+// ЗАЧЕМ: подключение к БД. В продакшене — Neon (HTTP-драйвер), локально без настройки — PGlite.
 import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle, type NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
+import { createLocalDb } from './local';
 
 const url = process.env.DATABASE_URL;
-// Fail fast: лучше упасть сразу с понятным текстом, чем получить загадочную ошибку позже
-if (!url) {
-  throw new Error('DATABASE_URL не задан. Скопируй .env.local.example в .env.local и вставь строку из Neon.');
-}
 
-export const db = drizzle({ client: neon(url), schema });
+// Локальный режим включается сам, если DATABASE_URL не задан (или задан как pglite://...).
+// Тогда поднимается PGlite — тот же Postgres, только внутри процесса, без облака и без пароля.
+const isLocal = !url || url.startsWith('pglite:') || url.startsWith('file:');
+
+export type AppDatabase = NeonHttpDatabase<typeof schema>;
+
+export const db: AppDatabase = (
+  isLocal ? createLocalDb(schema) : drizzle({ client: neon(url as string), schema })
+) as unknown as AppDatabase;

@@ -5,13 +5,22 @@
 
 Стек: Next.js 16.4 (App Router, Turbopack, `proxy.ts`, `"use cache"`), TypeScript, Drizzle ORM, Neon Postgres, Tailwind CSS v4, Vercel Hobby.
 
+## Быстрый запуск (без Neon)
+
+```
+npm install
+npm run dev
+```
+
+Если `DATABASE_URL` не задан, приложение само поднимает локальную БД на **PGlite** — это настоящий PostgreSQL, собранный в WebAssembly. Ничего устанавливать не нужно: схема создаётся из тех же миграций (`lib/db/migrations/`), данные лежат в `.pglite-data/` (в Git не попадает) и переживают перезапуск.
+
 ## Запуск с нуля
 
 1. **GitHub.** Создай пустой репозиторий (репозиторий — папка проекта с историей изменений) на github.com → New.
 2. **Клонирование.** `git clone <адрес-репо>` скачивает репозиторий на твой компьютер. Скопируй в него файлы проекта.
 3. **Зависимости.** `npm install` читает `package.json` и скачивает пакеты в `node_modules/`.
 4. **База на Neon.** neon.tech → New Project → Connect → скопируй **pooled** строку подключения (в хосте есть `-pooler`).
-5. **Переменные окружения.** `cp .env.local.example .env.local` и вставь строку в `DATABASE_URL`. Файл `.env.local` игнорируется Git — секреты не попадут в репозиторий.
+5. **Переменные окружения.** `cp .env.local.example .env.local` и вставь строку в `DATABASE_URL`. Файл `.env.local` игнорируется Git — секреты не попадут в репозиторий. Если оставить `DATABASE_URL` пустым — работает локальная PGlite (шаги 4–6 можно пропустить).
 6. **Миграции.**
    - `npm run db:generate` — drizzle-kit сравнивает `lib/db/schema.ts` с прошлым состоянием и создаёт SQL-файл в `lib/db/migrations/`.
    - `npm run db:migrate` — применяет SQL к Neon. Закоммить папку migrations в Git.
@@ -27,6 +36,7 @@
 - `cacheComponents: true` включает модель, где ничего не кэшируется по умолчанию. Кэш включается директивой `"use cache"`.
 - **`updateTag` работает только в Server Action** (проверено по исходникам Next 16.4.3: ошибка «updateTag can only be called from within a Server Action»). Поэтому форма поста использует Server Action (`app/social/actions.ts`), а API-роуты сбрасывают кэш через `revalidateTag('posts', { expire: 0 })` (профиль `'max'` отдаёт устаревшие данные, пока идёт фоновое обновление — в тесте лента оставалась старой больше 20 секунд).
 - Tailwind v4 конфигурируется через CSS, поэтому файла `tailwind.config.ts` нет.
+- Локальный режим БД: `lib/db/index.ts` выбирает драйвер по `DATABASE_URL` (пусто/`pglite:`/`file:` → PGlite через `drizzle-orm/pglite`, иначе → Neon HTTP). Экземпляр PGlite хранится в `globalThis`, потому что dev-сборка Turbopack грузит модуль в нескольких бандлах: два PGlite на одной папке не видят записи друг друга.
 - Фича «Песочница» и тексты уроков модулей 1–7 в этой версии — заготовки (см. ниже).
 
 ## Чек-лист безопасности
